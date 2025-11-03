@@ -288,7 +288,7 @@
                         </button>
 
                         <button type="button" class="plan-button" data-plan="annual" data-action="stripe">
-                            <span class="badge" style="background: #00c851;">SAVE!!/span>
+                            <span class="badge" style="background: #00c851;">SAVE!!</span>
                             <div class="plan-name">Creator Annual</div>
                             <div class="plan-price">£59.99/year</div>
                             <div class="plan-features">
@@ -309,16 +309,17 @@
 
     <script>
         // Configuration
-        const CONFIG = {
-            // Update these URLs after deploying Google Apps Script
-            appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzzBVX9QYHuL54K_clK6ZtLN_jHzrKgZHIk-NLuvSYNAc_LVJCxy7DjdrsF9I-r8HUt/exec',
-            
-            // Your Stripe Payment Link URLs
-            stripeMonthlyUrl: 'https://buy.stripe.com/YOUR_MONTHLY_LINK',
-            stripeAnnualUrl: 'https://buy.stripe.com/YOUR_ANNUAL_LINK',
-            
-            // Where to redirect after free signup
-            glideSignInUrl: 'https://arrow-hub.com/dl/8c423e/s/4b6ef9',
+       const CONFIG = {
+    // Update these URLs after deploying Google Apps Script
+    appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzzBVX9QYHuL54K_clK6ZtLN_jHzrKgZHIk-NLuvSYNAc_LVJCxy7DjdrsF9I-r8HUt/exec',
+    
+    // Your Stripe Payment Link URLs
+    stripeMonthlyUrl: 'https://buy.stripe.com/YOUR_MONTHLY_LINK',
+    stripeAnnualUrl: 'https://buy.stripe.com/YOUR_ANNUAL_LINK',
+    
+    // Where to redirect after free signup
+    glideSignInUrl: 'https://arrow-hub.com/dl/8c423e/s/4b6ef9'
+}; // <- MISSING closing brace and semicolon!
             
 // Validate email domain (supports regional variations)
 function isEmailAllowed(email) {
