@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Arrow-Hub.com - Your Professional Portfolio Platform/title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        input[type="email"],
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .plans {
+            margin-top: 30px;
+        }
+
+        .plans-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .plan-button {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+        }
+
+        .plan-button:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .plan-button.featured {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+
+        .plan-button.featured:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .plan-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .plan-price {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .plan-features {
+            font-size: 0.9em;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        .plan-button.featured .plan-features {
+            opacity: 0.9;
+        }
+
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .allowed-domains {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .plan-price {
+                font-size: 1.3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>📸 Join Arrow-Hub.Com</h1>
+                <p>Your Professional Portfolio Platform</p>
+            </div>
+
+            <div class="content">
+                <div id="errorMessage" class="error"></div>
+                <div id="successMessage" class="success"></div>
+                <div id="loadingMessage" class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px;">Creating your account...</p>
+                </div>
+
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="name">Your Name</label>
+                        <input type="text" id="name" name="name" required placeholder="John Smith">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="you@gmail.com">
+                        <div class="allowed-domains">Only Gmail, Hotmail, Outlook, Yahoo, iCloud type emails currently accepted</div>
+                    </div>
+
+                    <div class="plans">
+                        <div class="plans-title">Choose Your Plan</div>
+
+                        <button type="button" class="plan-button" data-plan="free" data-action="free">
+                            <div class="plan-name">Basic (Free)</div>
+                            <div class="plan-price">£0/forever</div>
+                            <div class="plan-features">
+                                ✓ Full online public portfolio<br>
+                                ✓ Basic Gallery
+                                ✓ Social Links
+                            </div>
+                        </button>
+
+                        <button type="button" class="plan-button featured" data-plan="monthly" data-action="stripe">
+                            <span class="badge">MOST POPULAR</span>
+                            <div class="plan-name">Creator Monthly</div>
+                            <div class="plan-price">£5.99/month</div>
+                            <div class="plan-features">
+                                ✓ 500 photos or videos<br>
+                                ✓ 25GB storage<br>
+                                ✓ Unlimited Alubms<br>
+                                ✓ Personalised URL<br>
+                                ✓ Calendar & Bookings<br>
+                                ✓ Chat, Admin & Social Tools
+                            </div>
+                        </button>
+
+                        <button type="button" class="plan-button" data-plan="annual" data-action="stripe">
+                            <span class="badge" style="background: #00c851;">SAVE!!/span>
+                            <div class="plan-name">Creator Annual</div>
+                            <div class="plan-price">59.99/year</div>
+                            <div class="plan-features">
+                                ✓ Everything in the monthly plan<br>
+                                ✓ Priority support<br>
+                                ✓ 2 months free!
+                            </div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="footer">
+                Already have an account? <a href="https://arrow-hub.com/dl/8c423e/s/4b6ef9">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            // Update these URLs after deploying Google Apps Script
+            appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzzBVX9QYHuL54K_clK6ZtLN_jHzrKgZHIk-NLuvSYNAc_LVJCxy7DjdrsF9I-r8HUt/exec',
+            
+            // Your Stripe Payment Link URLs
+            stripeMonthlyUrl: 'https://buy.stripe.com/YOUR_MONTHLY_LINK',
+            stripeAnnualUrl: 'https://buy.stripe.com/YOUR_ANNUAL_LINK',
+            
+            // Where to redirect after free signup
+            glideSignInUrl: 'https://arrow-hub.com/dl/8c423e/s/4b6ef9',
+            
+// Validate email domain (supports regional variations)
+function isEmailAllowed(email) {
+    const domain = email.toLowerCase().split('@')[1];
+    
+    const allowedProviders = [
+        'gmail',
+        'googlemail',
+        'hotmail',
+        'outlook',
+        'live',
+        'yahoo',
+        'icloud',
+        'me.com',
+        'protonmail',
+        'msn',
+        'sky',
+        'gmx',
+        'virginmedia',
+        'alice',
+        'freenet',
+        'bt',
+      'laposte',
+      'aol',
+      'libero',
+      'mail',
+      'netcourrier',
+      'neuf',
+      '02',
+      'onet',
+      'online',
+      'orange',
+      'pipex',
+      'sfr',
+      'seznam',
+      'wanado',
+      'web',
+      'talktalk',
+      'tin',
+      'wp',
+        'proton'
+    ];
+    
+    return allowedProviders.some(provider => domain.includes(provider));
+}
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Show/hide loading
+        function setLoading(isLoading) {
+            document.getElementById('loadingMessage').style.display = isLoading ? 'block' : 'none';
+            document.getElementById('signupForm').style.display = isLoading ? 'none' : 'block';
+        }
+
+        // Handle plan selection
+        document.querySelectorAll('.plan-button').forEach(button => {
+            button.addEventListener('click', async function() {
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                
+                // Validate inputs
+                if (!name) {
+                    showError('Please enter your name');
+                    document.getElementById('name').focus();
+                    return;
+                }
+                
+                if (!email) {
+                    showError('Please enter your email address');
+                    document.getElementById('email').focus();
+                    return;
+                }
+                
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showError('Please enter a valid email address');
+                    document.getElementById('email').focus();
+                    return;
+                }
+                
+                // Check if email domain is allowed
+                if (!isEmailAllowed(email)) {
+                    showError('Sorry, we only accept Gmail, Hotmail, Outlook, Yahoo, iCloud type addresses at this time.');
+                    document.getElementById('email').focus();
+                    return;
+                }
+                
+                const plan = this.dataset.plan;
+                const action = this.dataset.action;
+                
+                if (action === 'free') {
+                    // Free plan - create account directly
+                    await createFreeAccount(name, email);
+                } else {
+                    // Paid plan - redirect to Stripe
+                    redirectToStripe(plan, email, name);
+                }
+            });
+        });
+
+        // Create free account
+        async function createFreeAccount(name, email) {
+            setLoading(true);
+            
+            try {
+                const response = await fetch(CONFIG.appsScriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'create_free_account',
+                        name: name,
+                        email: email,
+                        plan: 'Basic'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess('✓ Account created! Redirecting to sign in...');
+                    setTimeout(() => {
+                        window.location.href = CONFIG.glideSignInUrl;
+                    }, 2000);
+                } else {
+                    setLoading(false);
+                    showError(result.message || 'Failed to create account. Please try again.');
+                }
+            } catch (error) {
+                setLoading(false);
+                showError('Network error. Please check your connection and try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        // Redirect to Stripe checkout
+        function redirectToStripe(plan, email, name) {
+            // Store email in localStorage for Stripe webhook to retrieve later
+            localStorage.setItem('arrow_signup_email', email);
+            localStorage.setItem('arrow_signup_name', name);
+            localStorage.setItem('arrow_signup_plan', plan);
+            
+            const stripeUrl = plan === 'monthly' ? CONFIG.stripeMonthlyUrl : CONFIG.stripeAnnualUrl;
+            
+            // Append email as prefill
+            const url = new URL(stripeUrl);
+            url.searchParams.append('prefilled_email', email);
+            
+            window.location.href = url.toString();
+        }
+    </script>
+</body>
+</html>
