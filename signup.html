@@ -445,9 +445,6 @@ function isEmailAllowed(email) {
             try {
                 const response = await fetch(CONFIG.appsScriptUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     body: JSON.stringify({
                         action: 'create_free_account',
                         name: name,
