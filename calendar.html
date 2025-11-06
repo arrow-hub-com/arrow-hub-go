@@ -848,7 +848,7 @@
             try {
                 const formData = {
                     action: document.getElementById('formBookingId').value ? 'update_booking' : 'create_booking',
-                    booking_id: document.getElementById('formBookingId').value || undefined,
+                    booking_id: document.getElementById('formBookingId').value || '',
                     user_email: getPhotographerEmail(),
                     client_name: document.getElementById('formClientName').value,
                     client_email: document.getElementById('formClientEmail').value,
@@ -867,14 +867,12 @@
                     amount_quoted: document.getElementById('formTotalPayment').value || '',
                     pay_type: document.getElementById('formCompensation').value,
                     emergency_email: document.getElementById('formEmergencyEmail').value || '',
-                    notes: document.getElementById('formNotes').value || '',
-                    service_provider_name: 'Arrow Hub User' // Generic name
+                    notes: document.getElementById('formNotes').value || ''
                 };
 
-                const response = await fetch(CONFIG.appsScriptUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
+                // Use GET with URL parameters to avoid CORS
+                const params = new URLSearchParams(formData);
+                const response = await fetch(`${CONFIG.appsScriptUrl}?${params.toString()}`);
 
                 const result = await response.json();
 
@@ -913,17 +911,16 @@
                     notes: document.getElementById('formBlockNotes').value
                 };
 
-                const response = await fetch(CONFIG.appsScriptUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
+                // Use GET with URL parameters to avoid CORS
+                const params = new URLSearchParams(formData);
+                const response = await fetch(`${CONFIG.appsScriptUrl}?${params.toString()}`);
 
                 const result = await response.json();
 
                 if (result.success) {
                     alert('Time blocked successfully!');
                     closeModal('formModal');
-                    location.reload(); // Reload calendar
+                    location.reload();
                 } else {
                     alert('Error: ' + result.error);
                 }
@@ -979,21 +976,20 @@
                 const props = currentEvent.extendedProps;
                 const formData = {
                     action: props.type === 'booking' ? 'delete_booking' : 'delete_block',
-                    booking_id: props.type === 'booking' ? props.data.booking_id : undefined,
-                    block_id: props.type === 'block' ? props.data.block_id : undefined
+                    booking_id: props.type === 'booking' ? props.data.booking_id : '',
+                    block_id: props.type === 'block' ? props.data.block_id : ''
                 };
 
-                const response = await fetch(CONFIG.appsScriptUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
+                // Use GET with URL parameters to avoid CORS
+                const params = new URLSearchParams(formData);
+                const response = await fetch(`${CONFIG.appsScriptUrl}?${params.toString()}`);
 
                 const result = await response.json();
 
                 if (result.success) {
                     alert('Event deleted successfully!');
                     closeModal('viewModal');
-                    location.reload(); // Reload calendar
+                    location.reload();
                 } else {
                     alert('Error: ' + result.error);
                 }
@@ -1009,24 +1005,20 @@
             try {
                 const formData = {
                     action: 'send_ics',
-                    booking: {
-                        booking_id: bookingId,
-                        photographer_email: bookingData.photographer_email,
-                        photographer_name: bookingData.photographer_name,
-                        client_name: bookingData.client_name,
-                        client_email: bookingData.client_email,
-                        date: bookingData.date,
-                        start_time: bookingData.start_time,
-                        end_time: bookingData.end_time,
-                        location: bookingData.location,
-                        notes: bookingData.notes
-                    }
+                    booking_id: bookingId,
+                    user_email: bookingData.user_email,
+                    client_name: bookingData.client_name,
+                    client_email: bookingData.client_email,
+                    date: bookingData.date,
+                    start_time: bookingData.start_time,
+                    end_time: bookingData.end_time,
+                    shoot_address: bookingData.shoot_address || '',
+                    notes: bookingData.notes || ''
                 };
 
-                const response = await fetch(CONFIG.appsScriptUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
+                // Use GET with URL parameters to avoid CORS
+                const params = new URLSearchParams(formData);
+                const response = await fetch(`${CONFIG.appsScriptUrl}?${params.toString()}`);
 
                 const result = await response.json();
 
