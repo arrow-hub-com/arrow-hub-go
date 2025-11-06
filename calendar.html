@@ -496,11 +496,7 @@
                                 <select id="formShootLevel">
                                     <option value="">Select...</option>
                                     <option value="Lingerie">Lingerie</option>
-                                    <option value="Lingerie">Glamour</option>
-                                    <option value="Lingerie">Implied</option>
-                                    <option value="Lingerie">Art Nude</option>
-                                    <option value="Lingerie">Topless</option>
-                                    <option value="Glamour">Adult</option>
+                                    <option value="Glamour">Glamour</option>
                                     <option value="Portrait">Portrait</option>
                                     <option value="Fashion">Fashion</option>
                                     <option value="Commercial">Commercial</option>
@@ -509,10 +505,6 @@
                                     <option value="Fitness">Fitness</option>
                                     <option value="Beauty">Beauty</option>
                                     <option value="Lifestyle">Lifestyle</option>
-                                     <option value="Lifestyle">Cosplay</option>
-                                     <option value="Lifestyle">Dance</option>
-                                     <option value="Lifestyle">Maternity</option>
-                                     <option value="Lifestyle">Pin Up</option>
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
@@ -595,7 +587,7 @@
         // CONFIGURATION
         const CONFIG = {
             appsScriptUrl: 'https://script.google.com/macros/s/AKfycbySK3LL4XcJdFZHfcv-xCfhiKWWKNnY9TXie02dTeHJ81nhls6VF9rAzBJKOh1c9cOF/exec',
-            photographerEmail: 'support@arrow-hub.com' // Service provider email
+            photographerEmail: 'USER_EMAIL_HERE' // Service provider email
         };
 
         let calendar;
@@ -621,6 +613,10 @@
         async function loadAllData() {
             try {
                 const email = getPhotographerEmail();
+                console.log('=== LOADING CALENDAR DATA ===');
+                console.log('User email:', email);
+                console.log('Apps Script URL:', CONFIG.appsScriptUrl);
+                
                 const promises = [];
                 
                 // Load 12 months of data
@@ -629,18 +625,26 @@
                     date.setMonth(date.getMonth() + i);
                     const month = formatMonthForAPI(date);
                     const url = `${CONFIG.appsScriptUrl}?email=${encodeURIComponent(email)}&month=${month}`;
+                    console.log(`Queuing request for ${month}:`, url);
                     promises.push(fetch(url).then(r => r.json()));
                 }
 
+                console.log('Fetching data from Apps Script...');
                 const results = await Promise.all(promises);
+                console.log('API responses received:', results.length);
                 
                 // Combine all data
                 allEvents = [];
-                results.forEach(data => {
+                results.forEach((data, index) => {
+                    console.log(`Processing result ${index}:`, data);
+                    
                     if (data.success) {
+                        console.log(`  Success! Bookings: ${data.bookings?.length || 0}, Blocks: ${data.blocks?.length || 0}`);
+                        
                         // Add bookings
                         if (data.bookings) {
                             data.bookings.forEach(booking => {
+                                console.log('  Adding booking:', booking.booking_id, booking.client_name, booking.booking_date);
                                 allEvents.push({
                                     id: booking.booking_id,
                                     title: booking.client_name || 'Booking',
@@ -658,6 +662,7 @@
                         // Add blocks
                         if (data.blocks) {
                             data.blocks.forEach(block => {
+                                console.log('  Adding block:', block.block_id, block.block_type, block.block_date);
                                 allEvents.push({
                                     id: block.block_id,
                                     title: block.block_type || 'Blocked',
@@ -672,14 +677,19 @@
                                 });
                             });
                         }
+                    } else {
+                        console.error(`  Failed! Error: ${data.error}`);
                     }
                 });
+
+                console.log('=== TOTAL EVENTS LOADED:', allEvents.length, '===');
+                console.log('All events:', allEvents);
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('calendar').style.display = 'block';
 
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error('=== ERROR LOADING DATA ===', error);
                 document.getElementById('loading').innerHTML = `
                     <div class="error-message">Failed to load calendar data. Please refresh the page.</div>
                 `;
