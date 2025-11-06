@@ -742,6 +742,10 @@
             const modal = document.getElementById('viewModal');
             document.getElementById('viewModalTitle').textContent = 'Booking Details';
             
+            // Store the booking data for edit/delete buttons
+            modal.dataset.bookingData = JSON.stringify(booking);
+            modal.dataset.eventType = 'booking';
+            
             const statusClass = `status-${booking.status.toLowerCase()}`;
             
             document.getElementById('viewModalContent').innerHTML = `
@@ -790,6 +794,10 @@
         function showBlockDetails(block) {
             const modal = document.getElementById('viewModal');
             document.getElementById('viewModalTitle').textContent = 'Blocked Time';
+            
+            // Store the block data for edit/delete buttons
+            modal.dataset.blockData = JSON.stringify(block);
+            modal.dataset.eventType = 'block';
             
             document.getElementById('viewModalContent').innerHTML = `
                 <div class="info-row">
@@ -977,59 +985,78 @@
 
         // Edit current event
         function editEvent() {
-            if (!currentEvent) return;
+            const modal = document.getElementById('viewModal');
+            const eventType = modal.dataset.eventType;
+            
+            if (!eventType) {
+                alert('Unable to edit - no event data found');
+                return;
+            }
             
             closeModal('viewModal');
             
-            const props = currentEvent.extendedProps;
-            const modal = document.getElementById('formModal');
-            
-            if (props.type === 'booking') {
-                const b = props.data;
+            if (eventType === 'booking') {
+                const booking = JSON.parse(modal.dataset.bookingData);
                 
                 document.getElementById('formModalTitle').textContent = 'Edit Booking';
                 document.getElementById('formBookingType').value = 'booking';
-                document.getElementById('formBookingId').value = b.booking_id;
-                document.getElementById('formClientName').value = b.client_name || '';
-                document.getElementById('formClientEmail').value = b.client_email || '';
-                document.getElementById('formClientPhone').value = b.client_phone || '';
-                document.getElementById('formClientCompany').value = b.client_company || '';
-                document.getElementById('formClientSocials').value = b.client_socials_url || '';
-                document.getElementById('formClientPortfolio').value = b.client_portfolio_url || '';
-                document.getElementById('formClientReferences').value = b.client_references_url || '';
-                document.getElementById('formDate').value = b.booking_date;
-                document.getElementById('formStartTime').value = b.start_time;
-                document.getElementById('formEndTime').value = b.end_time;
-                document.getElementById('formDuration').value = b.duration_minutes || 60;
-                document.getElementById('formStatus').value = b.status;
-                document.getElementById('formShootLevel').value = b.shoot_level || '';
-                document.getElementById('formShootAddress').value = b.location || '';
-                document.getElementById('formTotalPayment').value = b.amount_quoted || '';
-                document.getElementById('formCompensation').value = b.pay_type || '';
-                document.getElementById('formEmergencyEmail').value = b.emergency_email || '';
-                document.getElementById('formNotes').value = b.notes || '';
+                document.getElementById('formBookingId').value = booking.booking_id;
+                document.getElementById('formClientName').value = booking.client_name || '';
+                document.getElementById('formClientEmail').value = booking.client_email || '';
+                document.getElementById('formClientPhone').value = booking.client_phone || '';
+                document.getElementById('formClientCompany').value = booking.client_company || '';
+                document.getElementById('formClientSocials').value = booking.client_socials_url || '';
+                document.getElementById('formClientPortfolio').value = booking.client_portfolio_url || '';
+                document.getElementById('formClientReferences').value = booking.client_references_url || '';
+                document.getElementById('formDate').value = booking.booking_date;
+                document.getElementById('formStartTime').value = booking.start_time;
+                document.getElementById('formEndTime').value = booking.end_time;
+                document.getElementById('formDuration').value = booking.duration_minutes || 60;
+                document.getElementById('formStatus').value = booking.status;
+                document.getElementById('formShootLevel').value = booking.shoot_level || '';
+                document.getElementById('formShootAddress').value = booking.location || '';
+                document.getElementById('formTotalPayment').value = booking.amount_quoted || '';
+                document.getElementById('formCompensation').value = booking.pay_type || '';
+                document.getElementById('formEmergencyEmail').value = booking.emergency_email || '';
+                document.getElementById('formNotes').value = booking.notes || '';
                 
                 toggleFormFields();
             } else {
-                // Blocks are view-only for now, just allow delete
+                // Blocks are view-only for now
                 alert('Block editing - coming soon. You can delete and create a new block for now.');
                 return;
             }
             
-            modal.classList.add('active');
+            document.getElementById('formModal').classList.add('active');
         }
 
         // Delete current event
         async function deleteEvent() {
-            if (!currentEvent || !confirm('Are you sure you want to delete this event?')) return;
+            const modal = document.getElementById('viewModal');
+            const eventType = modal.dataset.eventType;
+            
+            if (!eventType || !confirm('Are you sure you want to delete this event?')) {
+                return;
+            }
             
             try {
-                const props = currentEvent.extendedProps;
-                const formData = {
-                    action: props.type === 'booking' ? 'delete_booking' : 'delete_block',
-                    booking_id: props.type === 'booking' ? props.data.booking_id : '',
-                    block_id: props.type === 'block' ? props.data.block_id : ''
-                };
+                let formData;
+                
+                if (eventType === 'booking') {
+                    const booking = JSON.parse(modal.dataset.bookingData);
+                    formData = {
+                        action: 'delete_booking',
+                        booking_id: booking.booking_id,
+                        block_id: ''
+                    };
+                } else {
+                    const block = JSON.parse(modal.dataset.blockData);
+                    formData = {
+                        action: 'delete_block',
+                        booking_id: '',
+                        block_id: block.block_id
+                    };
+                }
 
                 // Use GET with URL parameters to avoid CORS
                 const params = new URLSearchParams(formData);
