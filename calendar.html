@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - Arrow Hub</title>
+    
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 0;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1em;
+        }
+
+        .calendar-wrapper {
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #calendar {
+            max-width: 100%;
+        }
+
+        /* FullCalendar Customization */
+        .fc {
+            font-family: inherit;
+        }
+
+        .fc-toolbar-title {
+            font-size: 1.5em !important;
+            font-weight: 600;
+        }
+
+        .fc-button {
+            background: #667eea !important;
+            border: none !important;
+            text-transform: capitalize;
+            padding: 8px 16px !important;
+        }
+
+        .fc-button:hover {
+            background: #5568d3 !important;
+        }
+
+        .fc-button-active {
+            background: #764ba2 !important;
+        }
+
+        /* Event colors by status */
+        .fc-event.event-pending {
+            background-color: #ffc107 !important;
+            border-color: #e0a800 !important;
+            color: #000 !important;
+        }
+
+        .fc-event.event-confirmed {
+            background-color: #28a745 !important;
+            border-color: #218838 !important;
+        }
+
+        .fc-event.event-declined {
+            background-color: #dc3545 !important;
+            border-color: #bd2130 !important;
+        }
+
+        .fc-event.event-cancelled {
+            background-color: #6c757d !important;
+            border-color: #5a6268 !important;
+        }
+
+        .fc-event.event-block {
+            background-color: #495057 !important;
+            border-color: #343a40 !important;
+            opacity: 0.8;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-declined {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-cancelled {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .calendar-wrapper {
+                padding: 15px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Booking Calendar</h1>
+            <p id="userEmail">Loading...</p>
+        </div>
+        
+        <div class="calendar-wrapper">
+            <div id="loading" class="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading calendar data...</p>
+            </div>
+            <div id="calendar" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- View/Edit Booking Modal -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="viewModalTitle">Booking Details</h2>
+            </div>
+            <div class="modal-body">
+                <div id="viewModalContent"></div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+                    <button class="btn btn-primary" onclick="editEvent()">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteEvent()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Form Modal -->
+    <div id="formModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="formModalTitle">New Booking</h2>
+            </div>
+            <div class="modal-body">
+                <form id="bookingForm">
+                    <input type="hidden" id="formBookingId">
+                    <input type="hidden" id="formType" value="booking">
+                    
+                    <div class="form-group">
+                        <label>Booking Type</label>
+                        <select id="formBookingType" onchange="toggleFormFields()">
+                            <option value="booking">Client Booking</option>
+                            <option value="block">Block Time</option>
+                        </select>
+                    </div>
+
+                    <!-- Booking Fields -->
+                    <div id="bookingFields">
+                        <div class="form-group">
+                            <label>Client Name *</label>
+                            <input type="text" id="formClientName" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Client Email *</label>
+                                <input type="email" id="formClientEmail" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Client Phone</label>
+                                <input type="tel" id="formClientPhone">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Client Company</label>
+                            <input type="text" id="formClientCompany" placeholder="Optional">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Client Social URL</label>
+                                <input type="url" id="formClientSocials" placeholder="Instagram, TikTok, etc.">
+                            </div>
+                            <div class="form-group">
+                                <label>Client Portfolio URL</label>
+                                <input type="url" id="formClientPortfolio" placeholder="Portfolio website">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Client References URL</label>
+                            <input type="url" id="formClientReferences" placeholder="References or examples">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date *</label>
+                                <input type="date" id="formDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Duration (mins) *</label>
+                                <input type="number" id="formDuration" value="60" min="15" step="15" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Time *</label>
+                                <input type="time" id="formStartTime" required>
+                            </div>
+                            <div class="form-group">
+                                <label>End Time (auto-calculated)</label>
+                                <input type="time" id="formEndTime" readonly style="background: #f0f0f0;">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="formStatus">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Confirmed">Confirmed</option>
+                                    <option value="Declined">Declined</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Compensation *</label>
+                                <select id="formCompensation" required>
+                                    <option value="">Select...</option>
+                                    <option value="Fully Paid">Fully Paid</option>
+                                    <option value="Part Paid">Part Paid</option>
+                                    <option value="TFP">TFP (Time for Prints)</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Freelance">Freelance</option>
+                                    <option value="Hobby">Hobby</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Shoot Level</label>
+                                <select id="formShootLevel">
+                                    <option value="">Select...</option>
+                                    <option value="Lingerie">Lingerie</option>
+                                    <option value="Glamour">Glamour</option>
+                                    <option value="Portrait">Portrait</option>
+                                    <option value="Fashion">Fashion</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Boudoir">Boudoir</option>
+                                    <option value="Editorial">Editorial</option>
+                                    <option value="Fitness">Fitness</option>
+                                    <option value="Beauty">Beauty</option>
+                                    <option value="Lifestyle">Lifestyle</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Payment (£)</label>
+                                <input type="number" id="formTotalPayment" min="0" step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Shoot Address *</label>
+                            <input type="text" id="formShootAddress" placeholder="Full address for Google Maps" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Emergency Contact Email</label>
+                            <input type="email" id="formEmergencyEmail" placeholder="CC booking confirmation to safety contact">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea id="formNotes" placeholder="Any additional details..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Block Fields -->
+                    <div id="blockFields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date *</label>
+                                <input type="date" id="formBlockDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Block Type</label>
+                                <select id="formBlockType">
+                                    <option value="Busy">Busy</option>
+                                    <option value="Away">Away</option>
+                                    <option value="Holiday">Holiday</option>
+                                    <option value="Personal">Personal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="formAllDay"> All Day
+                            </label>
+                        </div>
+
+                        <div class="form-row" id="blockTimeFields">
+                            <div class="form-group">
+                                <label>Start Time</label>
+                                <input type="time" id="formBlockStartTime">
+                            </div>
+                            <div class="form-group">
+                                <label>End Time</label>
+                                <input type="time" id="formBlockEndTime">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea id="formBlockNotes" placeholder="Reason for blocking..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('formModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+    <script>
+        // CONFIGURATION
+        const CONFIG = {
+            appsScriptUrl: 'https://script.google.com/macros/s/AKfycbySK3LL4XcJdFZHfcv-xCfhiKWWKNnY9TXie02dTeHJ81nhls6VF9rAzBJKOh1c9cOF/exec',
+            photographerEmail: 'support@arrow-hub.com' // Service provider email
+        };
+
+        let calendar;
+        let allEvents = [];
+        let currentEvent = null;
+
+        // Get user email from URL or config
+        function getPhotographerEmail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('email') || CONFIG.photographerEmail;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            const email = getPhotographerEmail();
+            document.getElementById('userEmail').textContent = email;
+
+            await loadAllData();
+            initCalendar();
+        });
+
+        // Load data for entire year (fast after initial load)
+        async function loadAllData() {
+            try {
+                const email = getPhotographerEmail();
+                const promises = [];
+                
+                // Load 12 months of data
+                for (let i = -2; i <= 12; i++) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() + i);
+                    const month = formatMonthForAPI(date);
+                    const url = `${CONFIG.appsScriptUrl}?email=${encodeURIComponent(email)}&month=${month}`;
+                    promises.push(fetch(url).then(r => r.json()));
+                }
+
+                const results = await Promise.all(promises);
+                
+                // Combine all data
+                allEvents = [];
+                results.forEach(data => {
+                    if (data.success) {
+                        // Add bookings
+                        if (data.bookings) {
+                            data.bookings.forEach(booking => {
+                                allEvents.push({
+                                    id: booking.booking_id,
+                                    title: booking.client_name || 'Booking',
+                                    start: `${booking.booking_date}T${booking.start_time}`,
+                                    end: `${booking.booking_date}T${booking.end_time}`,
+                                    className: `event-${booking.status.toLowerCase()}`,
+                                    extendedProps: {
+                                        type: 'booking',
+                                        data: booking
+                                    }
+                                });
+                            });
+                        }
+                        
+                        // Add blocks
+                        if (data.blocks) {
+                            data.blocks.forEach(block => {
+                                allEvents.push({
+                                    id: block.block_id,
+                                    title: block.block_type || 'Blocked',
+                                    start: block.is_all_day ? block.block_date : `${block.block_date}T${block.start_time}`,
+                                    end: block.is_all_day ? block.block_date : `${block.block_date}T${block.end_time}`,
+                                    allDay: block.is_all_day,
+                                    className: 'event-block',
+                                    extendedProps: {
+                                        type: 'block',
+                                        data: block
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('calendar').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div class="error-message">Failed to load calendar data. Please refresh the page.</div>
+                `;
+            }
+        }
+
+        // Initialize FullCalendar
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: allEvents,
+                eventClick: handleEventClick,
+                dateClick: handleDateClick,
+                height: 'auto',
+                nowIndicator: true,
+                navLinks: true,
+                editable: false, // Disable drag-drop for now
+                selectable: true
+            });
+            
+            calendar.render();
+        }
+
+        // Handle event click (view details)
+        function handleEventClick(info) {
+            currentEvent = info.event;
+            const props = info.event.extendedProps;
+            
+            if (props.type === 'booking') {
+                showBookingDetails(props.data);
+            } else {
+                showBlockDetails(props.data);
+            }
+        }
+
+        // Handle date click (create new)
+        function handleDateClick(info) {
+            openFormModal('create', info.dateStr);
+        }
+
+        // Show booking details
+        function showBookingDetails(booking) {
+            const modal = document.getElementById('viewModal');
+            document.getElementById('viewModalTitle').textContent = 'Booking Details';
+            
+            const statusClass = `status-${booking.status.toLowerCase()}`;
+            
+            document.getElementById('viewModalContent').innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value"><span class="${statusClass} status-badge">${booking.status}</span></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Client</span>
+                    <span class="info-value">${booking.client_name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">${booking.client_email}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date</span>
+                    <span class="info-value">${formatDateReadable(booking.booking_date)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Time</span>
+                    <span class="info-value">${booking.start_time} - ${booking.end_time}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duration</span>
+                    <span class="info-value">${booking.duration_minutes} minutes</span>
+                </div>
+                ${booking.location ? `
+                <div class="info-row">
+                    <span class="info-label">Location</span>
+                    <span class="info-value">${booking.location}</span>
+                </div>
+                ` : ''}
+                ${booking.notes ? `
+                <div class="info-row">
+                    <span class="info-label">Notes</span>
+                    <span class="info-value">${booking.notes}</span>
+                </div>
+                ` : ''}
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Show block details
+        function showBlockDetails(block) {
+            const modal = document.getElementById('viewModal');
+            document.getElementById('viewModalTitle').textContent = 'Blocked Time';
+            
+            document.getElementById('viewModalContent').innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Type</span>
+                    <span class="info-value">${block.block_type}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date</span>
+                    <span class="info-value">${formatDateReadable(block.block_date)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Time</span>
+                    <span class="info-value">${block.is_all_day ? 'All Day' : `${block.start_time} - ${block.end_time}`}</span>
+                </div>
+                ${block.notes ? `
+                <div class="info-row">
+                    <span class="info-label">Notes</span>
+                    <span class="info-value">${block.notes}</span>
+                </div>
+                ` : ''}
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Open form modal
+        function openFormModal(mode, dateStr = null) {
+            const modal = document.getElementById('formModal');
+            
+            if (mode === 'create') {
+                document.getElementById('formModalTitle').textContent = 'New Booking';
+                document.getElementById('bookingForm').reset();
+                document.getElementById('formBookingId').value = '';
+                
+                if (dateStr) {
+                    document.getElementById('formDate').value = dateStr;
+                    document.getElementById('formBlockDate').value = dateStr;
+                }
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // Toggle form fields based on type
+        function toggleFormFields() {
+            const type = document.getElementById('formBookingType').value;
+            const bookingFields = document.getElementById('bookingFields');
+            const blockFields = document.getElementById('blockFields');
+            
+            if (type === 'booking') {
+                bookingFields.style.display = 'block';
+                blockFields.style.display = 'none';
+            } else {
+                bookingFields.style.display = 'none';
+                blockFields.style.display = 'block';
+            }
+        }
+
+        // Handle form submit
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const type = document.getElementById('formBookingType').value;
+            
+            if (type === 'booking') {
+                await saveBooking();
+            } else {
+                await saveBlock();
+            }
+        });
+
+        // Save booking
+        async function saveBooking() {
+            try {
+                const formData = {
+                    action: document.getElementById('formBookingId').value ? 'update_booking' : 'create_booking',
+                    booking_id: document.getElementById('formBookingId').value || undefined,
+                    user_email: getPhotographerEmail(),
+                    client_name: document.getElementById('formClientName').value,
+                    client_email: document.getElementById('formClientEmail').value,
+                    client_phone: document.getElementById('formClientPhone').value || '',
+                    client_company: document.getElementById('formClientCompany').value || '',
+                    client_socials_url: document.getElementById('formClientSocials').value || '',
+                    client_portfolio_url: document.getElementById('formClientPortfolio').value || '',
+                    client_references_url: document.getElementById('formClientReferences').value || '',
+                    date: document.getElementById('formDate').value,
+                    start_time: document.getElementById('formStartTime').value,
+                    end_time: document.getElementById('formEndTime').value,
+                    duration_minutes: parseInt(document.getElementById('formDuration').value),
+                    status: document.getElementById('formStatus').value,
+                    shoot_address: document.getElementById('formShootAddress').value,
+                    shoot_level: document.getElementById('formShootLevel').value || '',
+                    amount_quoted: document.getElementById('formTotalPayment').value || '',
+                    pay_type: document.getElementById('formCompensation').value,
+                    emergency_email: document.getElementById('formEmergencyEmail').value || '',
+                    notes: document.getElementById('formNotes').value || '',
+                    service_provider_name: 'Arrow Hub User' // Generic name
+                };
+
+                const response = await fetch(CONFIG.appsScriptUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Booking saved successfully!');
+                    closeModal('formModal');
+                    
+                    // Ask if they want to send calendar invite
+                    if (confirm('Send calendar invitation to both parties?')) {
+                        await sendICS(formData, result.booking_id || formData.booking_id);
+                    }
+                    
+                    // Reload calendar
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+
+            } catch (error) {
+                console.error('Error saving booking:', error);
+                alert('Failed to save booking. Please try again.');
+            }
+        }
+
+        // Save block
+        async function saveBlock() {
+            try {
+                const formData = {
+                    action: 'create_block',
+                    user_email: getPhotographerEmail(),
+                    date: document.getElementById('formBlockDate').value,
+                    start_time: document.getElementById('formBlockStartTime').value,
+                    end_time: document.getElementById('formBlockEndTime').value,
+                    is_all_day: document.getElementById('formAllDay').checked,
+                    block_type: document.getElementById('formBlockType').value,
+                    notes: document.getElementById('formBlockNotes').value
+                };
+
+                const response = await fetch(CONFIG.appsScriptUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Time blocked successfully!');
+                    closeModal('formModal');
+                    location.reload(); // Reload calendar
+                } else {
+                    alert('Error: ' + result.error);
+                }
+
+            } catch (error) {
+                console.error('Error saving block:', error);
+                alert('Failed to block time. Please try again.');
+            }
+        }
+
+        // Edit current event
+        function editEvent() {
+            if (!currentEvent) return;
+            
+            closeModal('viewModal');
+            
+            const props = currentEvent.extendedProps;
+            const modal = document.getElementById('formModal');
+            
+            if (props.type === 'booking') {
+                const b = props.data;
+                
+                document.getElementById('formModalTitle').textContent = 'Edit Booking';
+                document.getElementById('formBookingType').value = 'booking';
+                document.getElementById('formBookingId').value = b.booking_id;
+                document.getElementById('formClientName').value = b.client_name || '';
+                document.getElementById('formClientEmail').value = b.client_email || '';
+                document.getElementById('formClientPhone').value = b.client_phone || '';
+                document.getElementById('formDate').value = b.booking_date;
+                document.getElementById('formStartTime').value = b.start_time;
+                document.getElementById('formEndTime').value = b.end_time;
+                document.getElementById('formDuration').value = b.duration_minutes || 60;
+                document.getElementById('formStatus').value = b.status;
+                document.getElementById('formShootLevel').value = b.shoot_level || '';
+                document.getElementById('formLocation').value = b.location || '';
+                document.getElementById('formNotes').value = b.notes || '';
+                
+                toggleFormFields();
+            } else {
+                // Blocks are view-only for now, just allow delete
+                alert('Block editing - coming soon. You can delete and create a new block for now.');
+                return;
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // Delete current event
+        async function deleteEvent() {
+            if (!currentEvent || !confirm('Are you sure you want to delete this event?')) return;
+            
+            try {
+                const props = currentEvent.extendedProps;
+                const formData = {
+                    action: props.type === 'booking' ? 'delete_booking' : 'delete_block',
+                    booking_id: props.type === 'booking' ? props.data.booking_id : undefined,
+                    block_id: props.type === 'block' ? props.data.block_id : undefined
+                };
+
+                const response = await fetch(CONFIG.appsScriptUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Event deleted successfully!');
+                    closeModal('viewModal');
+                    location.reload(); // Reload calendar
+                } else {
+                    alert('Error: ' + result.error);
+                }
+
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                alert('Failed to delete event. Please try again.');
+            }
+        }
+
+        // Send ICS calendar invitation
+        async function sendICS(bookingData, bookingId) {
+            try {
+                const formData = {
+                    action: 'send_ics',
+                    booking: {
+                        booking_id: bookingId,
+                        photographer_email: bookingData.photographer_email,
+                        photographer_name: bookingData.photographer_name,
+                        client_name: bookingData.client_name,
+                        client_email: bookingData.client_email,
+                        date: bookingData.date,
+                        start_time: bookingData.start_time,
+                        end_time: bookingData.end_time,
+                        location: bookingData.location,
+                        notes: bookingData.notes
+                    }
+                };
+
+                const response = await fetch(CONFIG.appsScriptUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('Calendar invitations sent');
+                } else {
+                    console.error('Failed to send invitations:', result.error);
+                }
+
+            } catch (error) {
+                console.error('Error sending ICS:', error);
+            }
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            currentEvent = null;
+        }
+
+        // Helper functions
+        function formatMonthForAPI(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        function formatDateReadable(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('en-GB', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // Handle all-day checkbox
+        document.getElementById('formAllDay').addEventListener('change', function() {
+            document.getElementById('blockTimeFields').style.display = this.checked ? 'none' : 'flex';
+        });
+
+        // Auto-calculate end time based on start time + duration
+        function calculateEndTime() {
+            const startTime = document.getElementById('formStartTime').value;
+            const duration = parseInt(document.getElementById('formDuration').value);
+            
+            if (startTime && duration) {
+                const [hours, minutes] = startTime.split(':');
+                const start = new Date();
+                start.setHours(parseInt(hours), parseInt(minutes), 0);
+                start.setMinutes(start.getMinutes() + duration);
+                
+                const endHours = String(start.getHours()).padStart(2, '0');
+                const endMinutes = String(start.getMinutes()).padStart(2, '0');
+                document.getElementById('formEndTime').value = `${endHours}:${endMinutes}`;
+            }
+        }
+
+        // Add listeners for auto-calculation
+        document.getElementById('formStartTime').addEventListener('change', calculateEndTime);
+        document.getElementById('formDuration').addEventListener('change', calculateEndTime);
+        document.getElementById('formDuration').addEventListener('input', calculateEndTime);
+    </script>
+</body>
+</html>
