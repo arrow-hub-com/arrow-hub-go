@@ -877,7 +877,6 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('Booking saved successfully!');
                     closeModal('formModal');
                     
                     // Ask if they want to send calendar invite
@@ -885,8 +884,11 @@
                         await sendICS(formData, result.booking_id || formData.booking_id);
                     }
                     
-                    // Reload calendar
-                    location.reload();
+                    // Show success and reload after short delay
+                    alert('Booking saved successfully! Calendar will refresh...');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
                     alert('Error: ' + result.error);
                 }
@@ -1009,10 +1011,20 @@
                     user_email: bookingData.user_email,
                     client_name: bookingData.client_name,
                     client_email: bookingData.client_email,
+                    client_phone: bookingData.client_phone || '',
+                    client_company: bookingData.client_company || '',
+                    client_socials_url: bookingData.client_socials_url || '',
+                    client_portfolio_url: bookingData.client_portfolio_url || '',
+                    client_references_url: bookingData.client_references_url || '',
                     date: bookingData.date,
                     start_time: bookingData.start_time,
                     end_time: bookingData.end_time,
+                    duration_minutes: bookingData.duration_minutes,
                     shoot_address: bookingData.shoot_address || '',
+                    shoot_level: bookingData.shoot_level || '',
+                    amount_quoted: bookingData.amount_quoted || '',
+                    pay_type: bookingData.pay_type || '',
+                    emergency_email: bookingData.emergency_email || '',
                     notes: bookingData.notes || ''
                 };
 
