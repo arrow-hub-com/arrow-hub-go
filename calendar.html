@@ -496,7 +496,11 @@
                                 <select id="formShootLevel">
                                     <option value="">Select...</option>
                                     <option value="Lingerie">Lingerie</option>
-                                    <option value="Glamour">Glamour</option>
+                                    <option value="Lingerie">Glamour</option>
+                                    <option value="Lingerie">Implied</option>
+                                    <option value="Lingerie">Art Nude</option>
+                                    <option value="Lingerie">Topless</option>
+                                    <option value="Glamour">Adult</option>
                                     <option value="Portrait">Portrait</option>
                                     <option value="Fashion">Fashion</option>
                                     <option value="Commercial">Commercial</option>
@@ -505,6 +509,10 @@
                                     <option value="Fitness">Fitness</option>
                                     <option value="Beauty">Beauty</option>
                                     <option value="Lifestyle">Lifestyle</option>
+                                     <option value="Lifestyle">Cosplay</option>
+                                     <option value="Lifestyle">Dance</option>
+                                     <option value="Lifestyle">Maternity</option>
+                                     <option value="Lifestyle">Pin Up</option>
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
@@ -824,9 +832,31 @@
             if (type === 'booking') {
                 bookingFields.style.display = 'block';
                 blockFields.style.display = 'none';
+                
+                // Enable required validation for booking fields
+                document.getElementById('formClientName').required = true;
+                document.getElementById('formClientEmail').required = true;
+                document.getElementById('formDate').required = true;
+                document.getElementById('formStartTime').required = true;
+                document.getElementById('formShootAddress').required = true;
+                document.getElementById('formCompensation').required = true;
+                
+                // Disable required for block fields
+                document.getElementById('formBlockDate').required = false;
             } else {
                 bookingFields.style.display = 'none';
                 blockFields.style.display = 'block';
+                
+                // Disable required validation for booking fields
+                document.getElementById('formClientName').required = false;
+                document.getElementById('formClientEmail').required = false;
+                document.getElementById('formDate').required = false;
+                document.getElementById('formStartTime').required = false;
+                document.getElementById('formShootAddress').required = false;
+                document.getElementById('formCompensation').required = false;
+                
+                // Enable required for block fields
+                document.getElementById('formBlockDate').required = true;
             }
         }
 
@@ -884,11 +914,11 @@
                         await sendICS(formData, result.booking_id || formData.booking_id);
                     }
                     
-                    // Show success and reload after short delay
+                    // Show success, clear cache, and reload
                     alert('Booking saved successfully! Calendar will refresh...');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
+                    
+                    // Force cache clear by reloading entire page with cache bust
+                    window.location.href = window.location.href.split('?')[0] + '?email=' + getPhotographerEmail() + '&t=' + Date.now();
                 } else {
                     alert('Error: ' + result.error);
                 }
@@ -922,7 +952,9 @@
                 if (result.success) {
                     alert('Time blocked successfully!');
                     closeModal('formModal');
-                    location.reload();
+                    
+                    // Force cache clear by reloading with cache bust
+                    window.location.href = window.location.href.split('?')[0] + '?email=' + getPhotographerEmail() + '&t=' + Date.now();
                 } else {
                     alert('Error: ' + result.error);
                 }
@@ -951,13 +983,20 @@
                 document.getElementById('formClientName').value = b.client_name || '';
                 document.getElementById('formClientEmail').value = b.client_email || '';
                 document.getElementById('formClientPhone').value = b.client_phone || '';
+                document.getElementById('formClientCompany').value = b.client_company || '';
+                document.getElementById('formClientSocials').value = b.client_socials_url || '';
+                document.getElementById('formClientPortfolio').value = b.client_portfolio_url || '';
+                document.getElementById('formClientReferences').value = b.client_references_url || '';
                 document.getElementById('formDate').value = b.booking_date;
                 document.getElementById('formStartTime').value = b.start_time;
                 document.getElementById('formEndTime').value = b.end_time;
                 document.getElementById('formDuration').value = b.duration_minutes || 60;
                 document.getElementById('formStatus').value = b.status;
                 document.getElementById('formShootLevel').value = b.shoot_level || '';
-                document.getElementById('formLocation').value = b.location || '';
+                document.getElementById('formShootAddress').value = b.location || '';
+                document.getElementById('formTotalPayment').value = b.amount_quoted || '';
+                document.getElementById('formCompensation').value = b.pay_type || '';
+                document.getElementById('formEmergencyEmail').value = b.emergency_email || '';
                 document.getElementById('formNotes').value = b.notes || '';
                 
                 toggleFormFields();
@@ -991,7 +1030,9 @@
                 if (result.success) {
                     alert('Event deleted successfully!');
                     closeModal('viewModal');
-                    location.reload();
+                    
+                    // Force cache clear by reloading with cache bust
+                    window.location.href = window.location.href.split('?')[0] + '?email=' + getPhotographerEmail() + '&t=' + Date.now();
                 } else {
                     alert('Error: ' + result.error);
                 }
