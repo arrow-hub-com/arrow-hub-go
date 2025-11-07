@@ -615,7 +615,7 @@
             showLoading(false);
         }
 
-        // Load data for entire year
+        // Load data for entire year (CORS-safe version)
         async function loadAllData(forceRefresh = false) {
             try {
                 const email = getPhotographerEmail();
@@ -638,20 +638,14 @@
                     const month = formatMonthForAPI(date);
                     
                     // Add cache buster to force fresh data
-                    const cacheBuster = forceRefresh ? `&t=${Date.now()}` : '';
+                    const cacheBuster = forceRefresh ? `&t=${Date.now() + i}` : '';
                     const url = `${CONFIG.appsScriptUrl}?email=${encodeURIComponent(email)}&month=${month}${debugMode ? '&debug=true' : ''}${cacheBuster}`;
                     
                     console.log(`Queuing request for ${month}:`, url);
+                    
+                    // Simple fetch without custom headers (CORS-safe)
                     promises.push(
-                        fetch(url, {
-                            method: 'GET',
-                            cache: 'no-cache',
-                            headers: {
-                                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                                'Pragma': 'no-cache',
-                                'Expires': '0'
-                            }
-                        }).then(r => r.json())
+                        fetch(url).then(r => r.json())
                     );
                 }
 
@@ -916,7 +910,7 @@
             modal.classList.add('active');
         }
 
-        // Save booking or block
+        // Save booking or block (CORS-safe version)
         async function saveBooking() {
             try {
                 const type = document.getElementById('formBookingType').value;
@@ -968,11 +962,10 @@
                 
                 // Use GET with URL parameters to avoid CORS
                 const params = new URLSearchParams(formData);
-                const response = await fetch(`${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`, {
-                    method: 'GET',
-                    cache: 'no-cache'
-                });
-
+                const url = `${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`;
+                
+                // Simple fetch without custom headers (CORS-safe)
+                const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.success) {
@@ -994,7 +987,7 @@
             }
         }
 
-        // Delete current event
+        // Delete current event (CORS-safe version)
         async function deleteEvent() {
             const modal = document.getElementById('viewModal');
             const eventType = modal.dataset.eventType;
@@ -1023,11 +1016,10 @@
 
                 // Use GET with URL parameters to avoid CORS
                 const params = new URLSearchParams(formData);
-                const response = await fetch(`${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`, {
-                    method: 'GET',
-                    cache: 'no-cache'
-                });
-
+                const url = `${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`;
+                
+                // Simple fetch without custom headers (CORS-safe)
+                const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.success) {
