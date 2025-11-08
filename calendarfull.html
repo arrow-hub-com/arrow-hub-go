@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - Arrow Hub</title>
+    
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 0;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1em;
+        }
+
+        .calendar-wrapper {
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #calendar {
+            max-width: 100%;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(103, 126, 234, 0.95);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            z-index: 9999;
+            font-weight: 500;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        /* Refresh button */
+        .refresh-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* FullCalendar Customization */
+        .fc {
+            font-family: inherit;
+        }
+
+        .fc-toolbar-title {
+            font-size: 1.5em !important;
+            font-weight: 600;
+        }
+
+        .fc-button {
+            background: #667eea !important;
+            border: none !important;
+            text-transform: capitalize;
+            padding: 8px 16px !important;
+        }
+
+        .fc-button:hover {
+            background: #5568d3 !important;
+        }
+
+        .fc-button-active {
+            background: #764ba2 !important;
+        }
+
+        /* Event colors by status */
+        .fc-event.event-pending {
+            background-color: #ffc107 !important;
+            border-color: #e0a800 !important;
+            color: #000 !important;
+        }
+
+        .fc-event.event-confirmed {
+            background-color: #28a745 !important;
+            border-color: #218838 !important;
+        }
+
+        .fc-event.event-declined {
+            background-color: #dc3545 !important;
+            border-color: #bd2130 !important;
+        }
+
+        .fc-event.event-cancelled {
+            background-color: #6c757d !important;
+            border-color: #545b62 !important;
+        }
+
+        .fc-event.event-block {
+            background-color: #e0e0e0 !important;
+            border-color: #bdbdbd !important;
+            color: #424242 !important;
+            font-style: italic;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #bd2130;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+            opacity: 0.8;
+        }
+
+        .close:hover {
+            opacity: 1;
+        }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-badge.confirmed {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-badge.declined {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-badge.cancelled {
+            background: #6c757d;
+            color: white;
+        }
+
+        /* Detail view */
+        .detail-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #666;
+            width: 140px;
+            flex-shrink: 0;
+        }
+
+        .detail-value {
+            color: #333;
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .calendar-wrapper {
+                padding: 15px;
+            }
+            
+            .detail-row {
+                flex-direction: column;
+            }
+            
+            .detail-label {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading indicator -->
+    <div class="loading" id="loadingIndicator">Loading calendar data...</div>
+    
+    <div class="container">
+        <div class="header">
+            <button class="refresh-btn" onclick="refreshCalendar()">↻ Refresh</button>
+            <h1>Booking Calendar</h1>
+            <p>Manage your bookings and availability - <span id="userEmail">Loading...</span></p>
+        </div>
+        
+        <div class="calendar-wrapper">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <!-- Booking Form Modal -->
+    <div id="formModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" onclick="closeModal('formModal')">&times;</button>
+                <h2 id="formModalTitle">New Booking</h2>
+            </div>
+            <div class="modal-body">
+                <form id="bookingForm" onsubmit="event.preventDefault(); saveBooking();">
+                    <input type="hidden" id="formBookingId" value="">
+                    <input type="hidden" id="formBookingType" value="booking">
+                    
+                    <!-- Booking Fields -->
+                    <div id="bookingFields">
+                        <div class="form-group">
+                            <label for="formClientName">Client Name *</label>
+                            <input type="text" id="formClientName" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formClientEmail">Client Email</label>
+                                <input type="email" id="formClientEmail">
+                            </div>
+                            <div class="form-group">
+                                <label for="formClientPhone">Client Phone</label>
+                                <input type="tel" id="formClientPhone">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formClientCompany">Company/Agency</label>
+                            <input type="text" id="formClientCompany">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formClientSocials">Social Media URL</label>
+                            <input type="url" id="formClientSocials">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formClientPortfolio">Portfolio URL</label>
+                            <input type="url" id="formClientPortfolio">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formClientReferences">References URL</label>
+                            <input type="url" id="formClientReferences">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formDate">Date *</label>
+                                <input type="date" id="formDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="formStartTime">Start Time *</label>
+                                <input type="time" id="formStartTime" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formEndTime">End Time *</label>
+                                <input type="time" id="formEndTime" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="formDuration">Duration (minutes)</label>
+                                <input type="number" id="formDuration" value="60" min="15" step="15">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formStatus">Status</label>
+                            <select id="formStatus">
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Declined">Declined</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formShootLevel">Shoot Level</label>
+                            <select id="formShootLevel">
+                                <option value="">Select...</option>
+                                <option value="Portrait">Portrait</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Glamour">Glamour</option>
+                                <option value="Lingerie">Lingerie</option>
+                                <option value="Artistic Nude">Artistic Nude</option>
+                                <option value="Commercial">Commercial</option>
+                                <option value="Editorial">Editorial</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formShootAddress">Location/Address</label>
+                            <input type="text" id="formShootAddress">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formTotalPayment">Amount Quoted (£)</label>
+                                <input type="number" id="formTotalPayment" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="formCompensation">Payment Type</label>
+                                <select id="formCompensation">
+                                    <option value="">Select...</option>
+                                    <option value="Full Pay">Full Pay</option>
+                                    <option value="Part Pay">Part Pay</option>
+                                    <option value="TF">TF (Time for)</option>
+                                    <option value="Collaboration">Collaboration</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formEmergencyEmail">Emergency Contact Email</label>
+                            <input type="email" id="formEmergencyEmail">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formNotes">Notes</label>
+                            <textarea id="formNotes"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Block Fields -->
+                    <div id="blockFields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formBlockDate">Date *</label>
+                                <input type="date" id="formBlockDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="formBlockType">Block Type</label>
+                                <select id="formBlockType">
+                                    <option value="Busy">Busy</option>
+                                    <option value="Away">Away</option>
+                                    <option value="Holiday">Holiday</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="formAllDay" onchange="toggleTimeFields()">
+                                All Day
+                            </label>
+                        </div>
+                        
+                        <div class="form-row" id="blockTimeFields">
+                            <div class="form-group">
+                                <label for="formBlockStartTime">Start Time</label>
+                                <input type="time" id="formBlockStartTime">
+                            </div>
+                            <div class="form-group">
+                                <label for="formBlockEndTime">End Time</label>
+                                <input type="time" id="formBlockEndTime">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formBlockNotes">Notes</label>
+                            <textarea id="formBlockNotes"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('formModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Event Modal -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" onclick="closeModal('viewModal')">&times;</button>
+                <h2 id="viewModalTitle">Event Details</h2>
+            </div>
+            <div class="modal-body">
+                <div id="viewContent"></div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+                    <button class="btn btn-primary" onclick="editEvent()">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteEvent()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    
+    <script>
+        // Configuration - UPDATE THIS with your actual Apps Script URL
+        const CONFIG = {
+            appsScriptUrl: 'https://script.google.com/macros/s/AKfycbySK3LL4XcJdFZHfcv-xCfhiKWWKNnY9TXie02dTeHJ81nhls6VF9rAzBJKOh1c9cOF/exec',
+            photographerEmail: 'photographer@example.com' // Default email, will be overridden by URL param
+        };
+
+        let calendar;
+        let allEvents = [];
+        let currentEvent = null;
+
+        // Get photographer email from URL param or use default
+        function getPhotographerEmail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('email') || CONFIG.photographerEmail;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            const email = getPhotographerEmail();
+            document.getElementById('userEmail').textContent = email;
+
+            await loadAllData();
+            initCalendar();
+        });
+
+        // Refresh calendar with fresh data
+        async function refreshCalendar() {
+            showLoading(true);
+            allEvents = []; // Clear existing events
+            await loadAllData(true); // Force fresh data
+            
+            if (calendar) {
+                calendar.removeAllEvents();
+                calendar.addEventSource(allEvents);
+            }
+            
+            showLoading(false);
+        }
+
+        // Load data for entire year (CORS-safe version)
+        async function loadAllData(forceRefresh = false) {
+            try {
+                const email = getPhotographerEmail();
+                const urlParams = new URLSearchParams(window.location.search);
+                const debugMode = urlParams.get('debug') === 'true';
+                
+                console.log('=== LOADING CALENDAR DATA ===');
+                console.log('User email:', email);
+                console.log('Apps Script URL:', CONFIG.appsScriptUrl);
+                console.log('Debug mode:', debugMode);
+                console.log('Force refresh:', forceRefresh);
+                
+                showLoading(true);
+                const promises = [];
+                
+                // Load 12 months of data
+                for (let i = -2; i <= 12; i++) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() + i);
+                    const month = formatMonthForAPI(date);
+                    
+                    // Add cache buster to force fresh data
+                    const cacheBuster = forceRefresh ? `&t=${Date.now() + i}` : '';
+                    const url = `${CONFIG.appsScriptUrl}?email=${encodeURIComponent(email)}&month=${month}${debugMode ? '&debug=true' : ''}${cacheBuster}`;
+                    
+                    console.log(`Queuing request for ${month}:`, url);
+                    
+                    // Simple fetch without custom headers (CORS-safe)
+                    promises.push(
+                        fetch(url).then(r => r.json())
+                    );
+                }
+
+                console.log('Fetching data from Apps Script...');
+                const results = await Promise.all(promises);
+                console.log('API responses received:', results.length);
+                
+                // Combine all data
+                allEvents = [];
+                results.forEach((data, index) => {
+                    console.log(`Processing result ${index}:`, data);
+                    
+                    // Show debug logs if present
+                    if (data.debug) {
+                        console.log(`\n📋 DEBUG LOGS FOR MONTH ${data.month || 'unknown'}:`);
+                        if (data.debug.bookings) {
+                            console.log('\n=== BOOKINGS DEBUG ===');
+                            data.debug.bookings.forEach(log => console.log(log));
+                        }
+                        if (data.debug.blocks) {
+                            console.log('\n=== BLOCKS DEBUG ===');
+                            data.debug.blocks.forEach(log => console.log(log));
+                        }
+                        console.log(''); // Empty line after debug
+                    }
+                    
+                    if (data.success) {
+                        console.log(`  Success! Bookings: ${data.bookings?.length || 0}, Blocks: ${data.blocks?.length || 0}`);
+                        
+                        // Add bookings
+                        if (data.bookings && Array.isArray(data.bookings)) {
+                            data.bookings.forEach(booking => {
+                                if (booking.booking_id && booking.booking_date) {
+                                    console.log('  Adding booking:', booking.booking_id, booking.client_name, booking.booking_date);
+                                    allEvents.push({
+                                        id: booking.booking_id,
+                                        title: booking.client_name || 'Booking',
+                                        start: `${booking.booking_date}T${booking.start_time || '09:00:00'}`,
+                                        end: `${booking.booking_date}T${booking.end_time || '10:00:00'}`,
+                                        className: `event-${(booking.status || 'pending').toLowerCase()}`,
+                                        extendedProps: {
+                                            type: 'booking',
+                                            data: booking
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // Add blocks
+                        if (data.blocks && Array.isArray(data.blocks)) {
+                            data.blocks.forEach(block => {
+                                if (block.block_id && block.block_date) {
+                                    console.log('  Adding block:', block.block_id, block.block_type, block.block_date);
+                                    allEvents.push({
+                                        id: block.block_id,
+                                        title: block.block_type || 'Blocked',
+                                        start: block.is_all_day ? block.block_date : `${block.block_date}T${block.start_time || '00:00:00'}`,
+                                        end: block.is_all_day ? block.block_date : `${block.block_date}T${block.end_time || '23:59:59'}`,
+                                        allDay: block.is_all_day,
+                                        className: 'event-block',
+                                        extendedProps: {
+                                            type: 'block',
+                                            data: block
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    } else {
+                        console.error(`  Failed! Error: ${data.error}`);
+                        if (data.stack) {
+                            console.error('Stack trace:', data.stack);
+                        }
+                    }
+                });
+                
+                console.log('Total events loaded:', allEvents.length);
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Failed to load calendar data. Please check the console for details.');
+                showLoading(false);
+            }
+        }
+
+        // Initialize FullCalendar
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                },
+                events: allEvents,
+                editable: false,
+                selectable: true,
+                selectMirror: true,
+                eventClick: handleEventClick,
+                dateClick: handleDateClick,
+                height: 'auto',
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    meridiem: 'short'
+                }
+            });
+            
+            calendar.render();
+        }
+
+        // Handle clicking on an event
+        function handleEventClick(info) {
+            currentEvent = info.event;
+            const type = info.event.extendedProps.type;
+            const data = info.event.extendedProps.data;
+            
+            if (type === 'booking') {
+                showBookingDetails(data);
+            } else {
+                showBlockDetails(data);
+            }
+        }
+
+        // Handle clicking on a date
+        function handleDateClick(info) {
+            document.getElementById('formModalTitle').textContent = 'New Booking';
+            document.getElementById('formBookingType').value = 'booking';
+            document.getElementById('formBookingId').value = '';
+            document.getElementById('formDate').value = info.dateStr;
+            document.getElementById('formStatus').value = 'Confirmed';
+            
+            // Clear form
+            document.getElementById('bookingForm').reset();
+            document.getElementById('formDate').value = info.dateStr;
+            document.getElementById('formStatus').value = 'Confirmed';
+            
+            toggleFormFields();
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        // Toggle between booking and block form fields
+        function toggleFormFields() {
+            const type = document.getElementById('formBookingType').value;
+            
+            if (type === 'booking') {
+                document.getElementById('bookingFields').style.display = 'block';
+                document.getElementById('blockFields').style.display = 'none';
+            } else {
+                document.getElementById('bookingFields').style.display = 'none';
+                document.getElementById('blockFields').style.display = 'block';
+            }
+        }
+
+        // Toggle time fields for all-day blocks
+        function toggleTimeFields() {
+            const allDay = document.getElementById('formAllDay').checked;
+            document.getElementById('blockTimeFields').style.display = allDay ? 'none' : 'flex';
+        }
+
+        // Show booking details
+        function showBookingDetails(booking) {
+            const modal = document.getElementById('viewModal');
+            modal.dataset.eventType = 'booking';
+            modal.dataset.bookingData = JSON.stringify(booking);
+            
+            document.getElementById('viewModalTitle').textContent = `Booking: ${booking.client_name}`;
+            
+            const content = `
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge ${booking.status.toLowerCase()}">${booking.status}</span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date:</span>
+                    <span class="detail-value">${booking.booking_date}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Time:</span>
+                    <span class="detail-value">${booking.start_time} - ${booking.end_time}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Client:</span>
+                    <span class="detail-value">${booking.client_name}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">${booking.client_email || 'Not provided'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Phone:</span>
+                    <span class="detail-value">${booking.client_phone || 'Not provided'}</span>
+                </div>
+                ${booking.shoot_level ? `
+                <div class="detail-row">
+                    <span class="detail-label">Shoot Level:</span>
+                    <span class="detail-value">${booking.shoot_level}</span>
+                </div>
+                ` : ''}
+                ${booking.location ? `
+                <div class="detail-row">
+                    <span class="detail-label">Location:</span>
+                    <span class="detail-value">${booking.location}</span>
+                </div>
+                ` : ''}
+                ${booking.amount_quoted ? `
+                <div class="detail-row">
+                    <span class="detail-label">Amount:</span>
+                    <span class="detail-value">£${booking.amount_quoted}</span>
+                </div>
+                ` : ''}
+                ${booking.notes ? `
+                <div class="detail-row">
+                    <span class="detail-label">Notes:</span>
+                    <span class="detail-value">${booking.notes}</span>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('viewContent').innerHTML = content;
+            modal.classList.add('active');
+        }
+
+        // Show block details
+        function showBlockDetails(block) {
+            const modal = document.getElementById('viewModal');
+            modal.dataset.eventType = 'block';
+            modal.dataset.blockData = JSON.stringify(block);
+            
+            document.getElementById('viewModalTitle').textContent = `Blocked Time: ${block.block_type}`;
+            
+            const content = `
+                <div class="detail-row">
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">${block.block_type}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date:</span>
+                    <span class="detail-value">${block.block_date}</span>
+                </div>
+                ${!block.is_all_day ? `
+                <div class="detail-row">
+                    <span class="detail-label">Time:</span>
+                    <span class="detail-value">${block.start_time} - ${block.end_time}</span>
+                </div>
+                ` : ''}
+                ${block.notes ? `
+                <div class="detail-row">
+                    <span class="detail-label">Notes:</span>
+                    <span class="detail-value">${block.notes}</span>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('viewContent').innerHTML = content;
+            modal.classList.add('active');
+        }
+
+        // Save booking or block (CORS-safe version)
+        async function saveBooking() {
+            try {
+                const type = document.getElementById('formBookingType').value;
+                const bookingId = document.getElementById('formBookingId').value;
+                
+                let formData = {
+                    user_email: getPhotographerEmail()
+                };
+                
+                if (type === 'booking') {
+                    formData = {
+                        ...formData,
+                        action: bookingId ? 'update_booking' : 'create_booking',
+                        booking_id: bookingId,
+                        client_name: document.getElementById('formClientName').value,
+                        client_email: document.getElementById('formClientEmail').value,
+                        client_phone: document.getElementById('formClientPhone').value,
+                        client_company: document.getElementById('formClientCompany').value,
+                        client_socials_url: document.getElementById('formClientSocials').value,
+                        client_portfolio_url: document.getElementById('formClientPortfolio').value,
+                        client_references_url: document.getElementById('formClientReferences').value,
+                        date: document.getElementById('formDate').value,
+                        start_time: document.getElementById('formStartTime').value,
+                        end_time: document.getElementById('formEndTime').value,
+                        duration_minutes: document.getElementById('formDuration').value,
+                        status: document.getElementById('formStatus').value,
+                        shoot_level: document.getElementById('formShootLevel').value,
+                        shoot_address: document.getElementById('formShootAddress').value,
+                        amount_quoted: document.getElementById('formTotalPayment').value,
+                        pay_type: document.getElementById('formCompensation').value,
+                        emergency_email: document.getElementById('formEmergencyEmail').value,
+                        notes: document.getElementById('formNotes').value
+                    };
+                } else {
+                    formData = {
+                        ...formData,
+                        action: 'create_block',
+                        date: document.getElementById('formBlockDate').value,
+                        start_time: document.getElementById('formBlockStartTime').value,
+                        end_time: document.getElementById('formBlockEndTime').value,
+                        is_all_day: document.getElementById('formAllDay').checked,
+                        block_type: document.getElementById('formBlockType').value,
+                        notes: document.getElementById('formBlockNotes').value
+                    };
+                }
+
+                // Show loading
+                showLoading(true);
+                
+                // Use GET with URL parameters to avoid CORS
+                const params = new URLSearchParams(formData);
+                const url = `${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`;
+                
+                // Simple fetch without custom headers (CORS-safe)
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Saved successfully! Refreshing calendar...');
+                    closeModal('formModal');
+                    
+                    // Refresh calendar with fresh data
+                    await refreshCalendar();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+                
+                showLoading(false);
+
+            } catch (error) {
+                console.error('Error saving:', error);
+                alert('Failed to save. Please check the console for details.');
+                showLoading(false);
+            }
+        }
+
+        // Delete current event (CORS-safe version)
+        async function deleteEvent() {
+            const modal = document.getElementById('viewModal');
+            const eventType = modal.dataset.eventType;
+            
+            if (!eventType || !confirm('Are you sure you want to delete this event?')) {
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                let formData;
+                
+                if (eventType === 'booking') {
+                    const booking = JSON.parse(modal.dataset.bookingData);
+                    formData = {
+                        action: 'delete_booking',
+                        booking_id: booking.booking_id
+                    };
+                } else {
+                    const block = JSON.parse(modal.dataset.blockData);
+                    formData = {
+                        action: 'delete_block',
+                        block_id: block.block_id
+                    };
+                }
+
+                // Use GET with URL parameters to avoid CORS
+                const params = new URLSearchParams(formData);
+                const url = `${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`;
+                
+                // Simple fetch without custom headers (CORS-safe)
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Event deleted successfully!');
+                    closeModal('viewModal');
+                    
+                    // Refresh calendar
+                    await refreshCalendar();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+                
+                showLoading(false);
+
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                alert('Failed to delete event. Please try again.');
+                showLoading(false);
+            }
+        }
+
+        // Edit current event
+        function editEvent() {
+            const modal = document.getElementById('viewModal');
+            const eventType = modal.dataset.eventType;
+            
+            if (!eventType) {
+                alert('Unable to edit - no event data found');
+                return;
+            }
+            
+            closeModal('viewModal');
+            
+            if (eventType === 'booking') {
+                const booking = JSON.parse(modal.dataset.bookingData);
+                
+                document.getElementById('formModalTitle').textContent = 'Edit Booking';
+                document.getElementById('formBookingType').value = 'booking';
+                document.getElementById('formBookingId').value = booking.booking_id;
+                document.getElementById('formClientName').value = booking.client_name || '';
+                document.getElementById('formClientEmail').value = booking.client_email || '';
+                document.getElementById('formClientPhone').value = booking.client_phone || '';
+                document.getElementById('formClientCompany').value = booking.client_company || '';
+                document.getElementById('formClientSocials').value = booking.client_socials_url || '';
+                document.getElementById('formClientPortfolio').value = booking.client_portfolio_url || '';
+                document.getElementById('formClientReferences').value = booking.client_references_url || '';
+                document.getElementById('formDate').value = booking.booking_date;
+                document.getElementById('formStartTime').value = booking.start_time;
+                document.getElementById('formEndTime').value = booking.end_time;
+                document.getElementById('formDuration').value = booking.duration_minutes || 60;
+                document.getElementById('formStatus').value = booking.status;
+                document.getElementById('formShootLevel').value = booking.shoot_level || '';
+                document.getElementById('formShootAddress').value = booking.location || '';
+                document.getElementById('formTotalPayment').value = booking.amount_quoted || '';
+                document.getElementById('formCompensation').value = booking.pay_type || '';
+                document.getElementById('formEmergencyEmail').value = booking.emergency_email || '';
+                document.getElementById('formNotes').value = booking.notes || '';
+                
+                toggleFormFields();
+            } else {
+                // Blocks are view-only for now
+                alert('Block editing - coming soon. You can delete and create a new block for now.');
+                return;
+            }
+            
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            currentEvent = null;
+        }
+
+        // Show/hide loading indicator
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').classList.toggle('active', show);
+        }
+
+        // Helper functions
+        function formatMonthForAPI(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        // Handle escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
