@@ -586,10 +586,123 @@
         let allEvents = [];
         let currentEvent = null;
 
-        // Get photographer email from URL param or use default
+        // Utility: get photographer email from URL param or default
         function getPhotographerEmail() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('email') || CONFIG.photographerEmail;
+        }
+
+        // Utility: show/hide loading indicator
+        function showLoading(flag) {
+            const el = document.getElementById('loadingIndicator');
+            if (!el) return;
+            if (flag) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+
+        // Utility: safe field getter (tries multiple possible key names)
+        function getField(obj, ...keys) {
+            for (const k of keys) {
+                if (obj && typeof obj[k] !== 'undefined' && obj[k] !== null) return obj[k];
+            }
+            return undefined;
+        }
+
+        // Utility: add days to YYYY-MM-DD date string
+        function addDaysToDateString(dateStr, days) {
+            if (!dateStr) return dateStr;
+            const parts = dateStr.split('-').map(p => parseInt(p, 10));
+            if (parts.length !== 3 || isNaN(parts[0])) return dateStr;
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            d.setDate(d.getDate() + days);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        // Map booking object from server to FullCalendar event (robust to different key names)
+        function mapBookingToEvent(booking) {
+            const bookingId = getField(booking, 'booking_id', 'id', 'bookingId', 'ID');
+            const date = getField(booking, 'booking_date', 'date', 'bookingDate', 'day');
+            const start_time = getField(booking, 'start_time', 'start', 'startTime') || '09:00:00';
+            const end_time = getField(booking, 'end_time', 'end', 'endTime') || '10:00:00';
+            const status = (getField(booking, 'status', 'booking_status', 'state') || 'Pending').toString();
+            const client_name = getField(booking, 'client_name', 'clientName', 'name') || 'Booking';
+
+            if (!bookingId || !date) return null;
+
+            // Normalize time format if necessary (ensure HH:MM:SS)
+            const normalizeTime = (t) => {
+                if (!t) return '00:00:00';
+                // if format is HH:MM, append :00
+                if (/^\d{2}:\d{2}$/.test(t)) return t + ':00';
+                if (/^\d{2}:\d{2}:\d{2}$/.test(t)) return t;
+                return String(t);
+            };
+
+            return {
+                id: String(bookingId),
+                title: client_name,
+                start: `${date}T${normalizeTime(start_time)}`,
+                end: `${date}T${normalizeTime(end_time)}`,
+                className: `event-${status.toLowerCase()}`,
+                extendedProps: {
+                    type: 'booking',
+                    data: booking
+                }
+            };
+        }
+
+        // Map block object from server to FullCalendar event
+        function mapBlockToEvent(block) {
+            const blockId = getField(block, 'block_id', 'id', 'blockId', 'ID');
+            const date = getField(block, 'block_date', 'date', 'blockDate');
+            // Accept 'true'/'false' strings as well
+            const is_all_day_raw = getField(block, 'is_all_day', 'allDay', 'isAllDay');
+            const is_all_day = (is_all_day_raw === true || is_all_day_raw === 'true' || is_all_day_raw === '1');
+            const start_time = getField(block, 'start_time', 'start', 'startTime') || '00:00:00';
+            const end_time = getField(block, 'end_time', 'end', 'endTime') || '23:59:59';
+            const block_type = getField(block, 'block_type', 'type') || 'Blocked';
+
+            if (!blockId || !date) return null;
+
+            // For all-day events FullCalendar treats 'end' as exclusive: use next day for full day blocks
+            if (is_all_day) {
+                const endDate = addDaysToDateString(date, 1);
+                return {
+                    id: String(blockId),
+                    title: block_type,
+                    start: date,
+                    end: endDate,
+                    allDay: true,
+                    className: 'event-block',
+                    extendedProps: { type: 'block', data: block }
+                };
+            } else {
+                const normalizeTime = (t) => {
+                    if (!t) return '00:00:00';
+                    if (/^\d{2}:\d{2}$/.test(t)) return t + ':00';
+                    if (/^\d{2}:\d{2}:\d{2}$/.test(t)) return t;
+                    return String(t);
+                };
+                return {
+                    id: String(blockId),
+                    title: block_type,
+                    start: `${date}T${normalizeTime(start_time)}`,
+                    end: `${date}T${normalizeTime(end_time)}`,
+                    allDay: false,
+                    className: 'event-block',
+                    extendedProps: { type: 'block', data: block }
+                };
+            }
+        }
+
+        // Format month for API query (YYYY-MM)
+        function formatMonthForAPI(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
         }
 
         // Initialize
@@ -597,7 +710,7 @@
             const email = getPhotographerEmail();
             document.getElementById('userEmail').textContent = email;
 
-            await loadAllData();
+            await loadAllData(); // populates allEvents
             initCalendar();
         });
 
@@ -609,13 +722,15 @@
             
             if (calendar) {
                 calendar.removeAllEvents();
+                // Add events array as an event source
                 calendar.addEventSource(allEvents);
+                calendar.render();
             }
             
             showLoading(false);
         }
 
-        // Load data for entire year (CORS-safe version)
+        // Load data for entire year (defensive, logs raw responses)
         async function loadAllData(forceRefresh = false) {
             try {
                 const email = getPhotographerEmail();
@@ -631,7 +746,7 @@
                 showLoading(true);
                 const promises = [];
                 
-                // Load 12 months of data
+                // Load several months of data (you can adjust range)
                 for (let i = -2; i <= 12; i++) {
                     const date = new Date();
                     date.setMonth(date.getMonth() + i);
@@ -643,9 +758,25 @@
                     
                     console.log(`Queuing request for ${month}:`, url);
                     
-                    // Simple fetch without custom headers (CORS-safe)
+                    // Defensive fetch: read text and try to parse JSON, log raw if not JSON
                     promises.push(
-                        fetch(url).then(r => r.json())
+                        fetch(url)
+                            .then(async resp => {
+                                const text = await resp.text();
+                                // Log truncated raw text for debugging
+                                console.log(`Raw response (month ${month}) - first 2000 chars:`, text.slice(0, 2000));
+                                try {
+                                    return JSON.parse(text);
+                                } catch (err) {
+                                    console.error('Failed to parse JSON for URL:', url, 'error:', err);
+                                    // Provide a helpful object to be handled later
+                                    return { success: false, error: 'Invalid JSON response', raw: text, month };
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Fetch error for', url, err);
+                                return { success: false, error: err.message || String(err), month };
+                            })
                     );
                 }
 
@@ -657,6 +788,11 @@
                 allEvents = [];
                 results.forEach((data, index) => {
                     console.log(`Processing result ${index}:`, data);
+                    
+                    if (!data) {
+                        console.warn('Empty response object at index', index);
+                        return;
+                    }
                     
                     // Show debug logs if present
                     if (data.debug) {
@@ -675,22 +811,15 @@
                     if (data.success) {
                         console.log(`  Success! Bookings: ${data.bookings?.length || 0}, Blocks: ${data.blocks?.length || 0}`);
                         
-                        // Add bookings
+                        // Add bookings (use mapping helper to be robust)
                         if (data.bookings && Array.isArray(data.bookings)) {
                             data.bookings.forEach(booking => {
-                                if (booking.booking_id && booking.booking_date) {
-                                    console.log('  Adding booking:', booking.booking_id, booking.client_name, booking.booking_date);
-                                    allEvents.push({
-                                        id: booking.booking_id,
-                                        title: booking.client_name || 'Booking',
-                                        start: `${booking.booking_date}T${booking.start_time || '09:00:00'}`,
-                                        end: `${booking.booking_date}T${booking.end_time || '10:00:00'}`,
-                                        className: `event-${(booking.status || 'pending').toLowerCase()}`,
-                                        extendedProps: {
-                                            type: 'booking',
-                                            data: booking
-                                        }
-                                    });
+                                const eventObj = mapBookingToEvent(booking);
+                                if (eventObj) {
+                                    console.log('  Adding booking event:', eventObj.id, eventObj.title, eventObj.start);
+                                    allEvents.push(eventObj);
+                                } else {
+                                    console.warn('  Skipping booking due to missing id/date:', booking);
                                 }
                             });
                         }
@@ -698,25 +827,20 @@
                         // Add blocks
                         if (data.blocks && Array.isArray(data.blocks)) {
                             data.blocks.forEach(block => {
-                                if (block.block_id && block.block_date) {
-                                    console.log('  Adding block:', block.block_id, block.block_type, block.block_date);
-                                    allEvents.push({
-                                        id: block.block_id,
-                                        title: block.block_type || 'Blocked',
-                                        start: block.is_all_day ? block.block_date : `${block.block_date}T${block.start_time || '00:00:00'}`,
-                                        end: block.is_all_day ? block.block_date : `${block.block_date}T${block.end_time || '23:59:59'}`,
-                                        allDay: block.is_all_day,
-                                        className: 'event-block',
-                                        extendedProps: {
-                                            type: 'block',
-                                            data: block
-                                        }
-                                    });
+                                const eventObj = mapBlockToEvent(block);
+                                if (eventObj) {
+                                    console.log('  Adding block event:', eventObj.id, eventObj.title, eventObj.start);
+                                    allEvents.push(eventObj);
+                                } else {
+                                    console.warn('  Skipping block due to missing id/date:', block);
                                 }
                             });
                         }
                     } else {
                         console.error(`  Failed! Error: ${data.error}`);
+                        if (data.raw) {
+                            console.error('  Raw response (first 2000 chars):', data.raw.slice(0,2000));
+                        }
                         if (data.stack) {
                             console.error('Stack trace:', data.stack);
                         }
@@ -779,10 +903,8 @@
             document.getElementById('formModalTitle').textContent = 'New Booking';
             document.getElementById('formBookingType').value = 'booking';
             document.getElementById('formBookingId').value = '';
-            document.getElementById('formDate').value = info.dateStr;
-            document.getElementById('formStatus').value = 'Confirmed';
             
-            // Clear form
+            // Clear form, then set date and status
             document.getElementById('bookingForm').reset();
             document.getElementById('formDate').value = info.dateStr;
             document.getElementById('formStatus').value = 'Confirmed';
@@ -816,34 +938,35 @@
             modal.dataset.eventType = 'booking';
             modal.dataset.bookingData = JSON.stringify(booking);
             
-            document.getElementById('viewModalTitle').textContent = `Booking: ${booking.client_name}`;
+            const status = booking && booking.status ? booking.status : (booking.booking_status || 'Pending');
+            document.getElementById('viewModalTitle').textContent = `Booking: ${booking.client_name || booking.clientName || 'Booking'}`;
             
             const content = `
                 <div class="detail-row">
                     <span class="detail-label">Status:</span>
                     <span class="detail-value">
-                        <span class="status-badge ${booking.status.toLowerCase()}">${booking.status}</span>
+                        <span class="status-badge ${String(status).toLowerCase()}">${status}</span>
                     </span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Date:</span>
-                    <span class="detail-value">${booking.booking_date}</span>
+                    <span class="detail-value">${booking.booking_date || booking.date || ''}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Time:</span>
-                    <span class="detail-value">${booking.start_time} - ${booking.end_time}</span>
+                    <span class="detail-value">${booking.start_time || booking.start || ''} - ${booking.end_time || booking.end || ''}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Client:</span>
-                    <span class="detail-value">${booking.client_name}</span>
+                    <span class="detail-value">${booking.client_name || booking.clientName || '—'}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Email:</span>
-                    <span class="detail-value">${booking.client_email || 'Not provided'}</span>
+                    <span class="detail-value">${booking.client_email || booking.clientEmail || 'Not provided'}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Phone:</span>
-                    <span class="detail-value">${booking.client_phone || 'Not provided'}</span>
+                    <span class="detail-value">${booking.client_phone || booking.clientPhone || 'Not provided'}</span>
                 </div>
                 ${booking.shoot_level ? `
                 <div class="detail-row">
@@ -851,10 +974,10 @@
                     <span class="detail-value">${booking.shoot_level}</span>
                 </div>
                 ` : ''}
-                ${booking.location ? `
+                ${booking.location || booking.shoot_address ? `
                 <div class="detail-row">
                     <span class="detail-label">Location:</span>
-                    <span class="detail-value">${booking.location}</span>
+                    <span class="detail-value">${booking.location || booking.shoot_address || ''}</span>
                 </div>
                 ` : ''}
                 ${booking.amount_quoted ? `
@@ -881,23 +1004,28 @@
             modal.dataset.eventType = 'block';
             modal.dataset.blockData = JSON.stringify(block);
             
-            document.getElementById('viewModalTitle').textContent = `Blocked Time: ${block.block_type}`;
+            document.getElementById('viewModalTitle').textContent = `Blocked Time: ${block.block_type || block.type || 'Blocked'}`;
             
             const content = `
                 <div class="detail-row">
                     <span class="detail-label">Type:</span>
-                    <span class="detail-value">${block.block_type}</span>
+                    <span class="detail-value">${block.block_type || block.type || ''}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Date:</span>
-                    <span class="detail-value">${block.block_date}</span>
+                    <span class="detail-value">${block.block_date || block.date || ''}</span>
                 </div>
-                ${!block.is_all_day ? `
+                ${!(block.is_all_day === true || block.is_all_day === 'true') ? `
                 <div class="detail-row">
                     <span class="detail-label">Time:</span>
-                    <span class="detail-value">${block.start_time} - ${block.end_time}</span>
+                    <span class="detail-value">${block.start_time || block.start || ''} - ${block.end_time || block.end || ''}</span>
                 </div>
-                ` : ''}
+                ` : `
+                <div class="detail-row">
+                    <span class="detail-label">All Day:</span>
+                    <span class="detail-value">Yes</span>
+                </div>
+                `}
                 ${block.notes ? `
                 <div class="detail-row">
                     <span class="detail-label">Notes:</span>
@@ -910,7 +1038,7 @@
             modal.classList.add('active');
         }
 
-        // Save booking or block (CORS-safe version)
+        // Save booking or block (GET with debug logging - keep this if Apps Script expects GET)
         async function saveBooking() {
             try {
                 const type = document.getElementById('formBookingType').value;
@@ -960,13 +1088,25 @@
                 // Show loading
                 showLoading(true);
                 
-                // Use GET with URL parameters to avoid CORS
+                // Build URL and log it for debugging
                 const params = new URLSearchParams(formData);
                 const url = `${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`;
-                
+                console.log('Saving booking — GET URL:', url);
+                console.log('Form data for save:', formData);
+
                 // Simple fetch without custom headers (CORS-safe)
-                const response = await fetch(url);
-                const result = await response.json();
+                const resp = await fetch(url);
+                const raw = await resp.text();
+                console.log('Raw save response (first 2000 chars):', raw.slice(0,2000));
+                let result;
+                try {
+                    result = JSON.parse(raw);
+                } catch (parseErr) {
+                    console.error('Save response not valid JSON:', parseErr, raw);
+                    alert('Server response was not valid JSON. Check the console (network tab) for details.');
+                    showLoading(false);
+                    return;
+                }
 
                 if (result.success) {
                     alert('Saved successfully! Refreshing calendar...');
@@ -975,7 +1115,8 @@
                     // Refresh calendar with fresh data
                     await refreshCalendar();
                 } else {
-                    alert('Error: ' + result.error);
+                    console.error('Server returned error on save:', result);
+                    alert('Error saving: ' + (result.error || 'Unknown error'));
                 }
                 
                 showLoading(false);
@@ -998,122 +1139,136 @@
             
             try {
                 showLoading(true);
-                let formData;
-                
+
+                let formData = { user_email: getPhotographerEmail() };
+
                 if (eventType === 'booking') {
-                    const booking = JSON.parse(modal.dataset.bookingData);
-                    formData = {
-                        action: 'delete_booking',
-                        booking_id: booking.booking_id
-                    };
+                    const booking = JSON.parse(modal.dataset.bookingData || '{}');
+                    const bookingId = getField(booking, 'booking_id', 'id', 'bookingId');
+                    if (!bookingId) {
+                        alert('Booking ID not found.');
+                        showLoading(false);
+                        return;
+                    }
+                    formData.action = 'delete_booking';
+                    formData.booking_id = bookingId;
                 } else {
-                    const block = JSON.parse(modal.dataset.blockData);
-                    formData = {
-                        action: 'delete_block',
-                        block_id: block.block_id
-                    };
+                    const block = JSON.parse(modal.dataset.blockData || '{}');
+                    const blockId = getField(block, 'block_id', 'id', 'blockId');
+                    if (!blockId) {
+                        alert('Block ID not found.');
+                        showLoading(false);
+                        return;
+                    }
+                    formData.action = 'delete_block';
+                    formData.block_id = blockId;
                 }
 
-                // Use GET with URL parameters to avoid CORS
                 const params = new URLSearchParams(formData);
                 const url = `${CONFIG.appsScriptUrl}?${params.toString()}&t=${Date.now()}`;
-                
-                // Simple fetch without custom headers (CORS-safe)
-                const response = await fetch(url);
-                const result = await response.json();
+                console.log('Deleting event — URL:', url);
+
+                const resp = await fetch(url);
+                const raw = await resp.text();
+                console.log('Raw delete response (first 2000 chars):', raw.slice(0,2000));
+                let result;
+                try {
+                    result = JSON.parse(raw);
+                } catch (parseErr) {
+                    console.error('Delete response not valid JSON:', parseErr, raw);
+                    alert('Server response was not valid JSON. Check the console (network tab) for details.');
+                    showLoading(false);
+                    return;
+                }
 
                 if (result.success) {
-                    alert('Event deleted successfully!');
+                    alert('Deleted successfully! Refreshing calendar...');
                     closeModal('viewModal');
-                    
-                    // Refresh calendar
                     await refreshCalendar();
                 } else {
-                    alert('Error: ' + result.error);
+                    console.error('Server returned error on delete:', result);
+                    alert('Error deleting: ' + (result.error || 'Unknown error'));
                 }
-                
-                showLoading(false);
 
-            } catch (error) {
-                console.error('Error deleting event:', error);
-                alert('Failed to delete event. Please try again.');
+                showLoading(false);
+            } catch (err) {
+                console.error('Error deleting event:', err);
+                alert('Failed to delete event. Check console for details.');
                 showLoading(false);
             }
         }
 
-        // Edit current event
+        // Edit current event - populate the form and open it
         function editEvent() {
             const modal = document.getElementById('viewModal');
             const eventType = modal.dataset.eventType;
-            
-            if (!eventType) {
-                alert('Unable to edit - no event data found');
-                return;
-            }
-            
-            closeModal('viewModal');
-            
+            if (!eventType) return;
+
             if (eventType === 'booking') {
-                const booking = JSON.parse(modal.dataset.bookingData);
-                
+                const booking = JSON.parse(modal.dataset.bookingData || '{}');
                 document.getElementById('formModalTitle').textContent = 'Edit Booking';
                 document.getElementById('formBookingType').value = 'booking';
-                document.getElementById('formBookingId').value = booking.booking_id;
-                document.getElementById('formClientName').value = booking.client_name || '';
-                document.getElementById('formClientEmail').value = booking.client_email || '';
-                document.getElementById('formClientPhone').value = booking.client_phone || '';
-                document.getElementById('formClientCompany').value = booking.client_company || '';
-                document.getElementById('formClientSocials').value = booking.client_socials_url || '';
-                document.getElementById('formClientPortfolio').value = booking.client_portfolio_url || '';
-                document.getElementById('formClientReferences').value = booking.client_references_url || '';
-                document.getElementById('formDate').value = booking.booking_date;
-                document.getElementById('formStartTime').value = booking.start_time;
-                document.getElementById('formEndTime').value = booking.end_time;
-                document.getElementById('formDuration').value = booking.duration_minutes || 60;
-                document.getElementById('formStatus').value = booking.status;
-                document.getElementById('formShootLevel').value = booking.shoot_level || '';
-                document.getElementById('formShootAddress').value = booking.location || '';
-                document.getElementById('formTotalPayment').value = booking.amount_quoted || '';
-                document.getElementById('formCompensation').value = booking.pay_type || '';
-                document.getElementById('formEmergencyEmail').value = booking.emergency_email || '';
-                document.getElementById('formNotes').value = booking.notes || '';
-                
+                document.getElementById('formBookingId').value = getField(booking, 'booking_id', 'id', 'bookingId') || '';
+
+                // Fill fields (use fallbacks)
+                document.getElementById('formClientName').value = getField(booking, 'client_name', 'clientName', 'name') || '';
+                document.getElementById('formClientEmail').value = getField(booking, 'client_email', 'clientEmail') || '';
+                document.getElementById('formClientPhone').value = getField(booking, 'client_phone', 'clientPhone') || '';
+                document.getElementById('formClientCompany').value = getField(booking, 'client_company') || '';
+                document.getElementById('formClientSocials').value = getField(booking, 'client_socials_url') || '';
+                document.getElementById('formClientPortfolio').value = getField(booking, 'client_portfolio_url') || '';
+                document.getElementById('formClientReferences').value = getField(booking, 'client_references_url') || '';
+                document.getElementById('formDate').value = getField(booking, 'booking_date', 'date') || '';
+                document.getElementById('formStartTime').value = getField(booking, 'start_time', 'start') || '';
+                document.getElementById('formEndTime').value = getField(booking, 'end_time', 'end') || '';
+                document.getElementById('formDuration').value = getField(booking, 'duration_minutes') || '';
+                document.getElementById('formStatus').value = getField(booking, 'status') || '';
+                document.getElementById('formShootLevel').value = getField(booking, 'shoot_level') || '';
+                document.getElementById('formShootAddress').value = getField(booking, 'shoot_address', 'location') || '';
+                document.getElementById('formTotalPayment').value = getField(booking, 'amount_quoted') || '';
+                document.getElementById('formCompensation').value = getField(booking, 'pay_type') || '';
+                document.getElementById('formEmergencyEmail').value = getField(booking, 'emergency_email') || '';
+                document.getElementById('formNotes').value = getField(booking, 'notes') || '';
+
                 toggleFormFields();
+                document.getElementById('viewModal').classList.remove('active');
+                document.getElementById('formModal').classList.add('active');
             } else {
-                // Blocks are view-only for now
-                alert('Block editing - coming soon. You can delete and create a new block for now.');
-                return;
+                const block = JSON.parse(modal.dataset.blockData || '{}');
+                document.getElementById('formModalTitle').textContent = 'Edit Block';
+                document.getElementById('formBookingType').value = 'block';
+                document.getElementById('formBookingId').value = getField(block, 'block_id', 'id', 'blockId') || '';
+
+                document.getElementById('formBlockDate').value = getField(block, 'block_date', 'date') || '';
+                document.getElementById('formBlockType').value = getField(block, 'block_type', 'type') || '';
+                const isAll = getField(block, 'is_all_day', 'allDay') === true || getField(block, 'is_all_day', 'allDay') === 'true';
+                document.getElementById('formAllDay').checked = !!isAll;
+                document.getElementById('formBlockStartTime').value = getField(block, 'start_time', 'start') || '';
+                document.getElementById('formBlockEndTime').value = getField(block, 'end_time', 'end') || '';
+                document.getElementById('formBlockNotes').value = getField(block, 'notes') || '';
+
+                toggleFormFields();
+                toggleTimeFields();
+                document.getElementById('viewModal').classList.remove('active');
+                document.getElementById('formModal').classList.add('active');
             }
-            
-            document.getElementById('formModal').classList.add('active');
         }
 
-        // Close modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-            currentEvent = null;
-        }
+        // Close a modal by id
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active');
 
-        // Show/hide loading indicator
-        function showLoading(show) {
-            document.getElementById('loadingIndicator').classList.toggle('active', show);
-        }
-
-        // Helper functions
-        function formatMonthForAPI(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            return `${year}-${month}`;
-        }
-
-        // Handle escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal.active').forEach(modal => {
-                    modal.classList.remove('active');
-                });
+            // clear any dataset payloads to avoid stale data
+            if (id === 'viewModal') {
+                delete el.dataset.eventType;
+                delete el.dataset.bookingData;
+                delete el.dataset.blockData;
             }
-        });
+        }
+
+        // End of script
     </script>
 </body>
 </html>
